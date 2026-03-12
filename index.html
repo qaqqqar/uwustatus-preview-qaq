@@ -182,7 +182,37 @@
   </div>
 
 </div>
+<!-- 使用须知弹窗 -->
+<div id="noticeOverlay" style="
+  position:fixed;inset:0;z-index:9998;
+  background:rgba(0,0,0,0.65);
+  display:flex;align-items:center;justify-content:center;
+  padding:20px;
+">
+  <div style="
+    background:var(--bg-panel);
+    border:1px solid var(--border-mid);
+    border-radius:var(--radius-lg);
+    padding:24px 22px 20px;
+    max-width:380px;width:100%;
+    box-shadow:0 8px 32px rgba(0,0,0,0.5);
+    display:flex;flex-direction:column;gap:14px;
+  ">
+    <div style="font-size:13px;font-weight:700;color:var(--text-label);letter-spacing:0.06em;text-transform:uppercase;">使用须知</div>
+    <div style="font-size:12px;color:var(--text-secondary);line-height:1.9;white-space:pre-line;">欢迎使用uwu状态栏预览工具！
+作者：qaq
 
+本人没搞明白uwu里面怎么预览的遂速肘了一个预览小工具！
+禁止二改模仿抄袭等行为！没有提供灵感的义务！
+禁止对其他老师的代码做成二改模仿抄袭擦边等不良行为！
+
+让我们一起愉快的玩耍uwu吧！</div>
+    <div style="display:flex;align-items:center;justify-content:space-between;gap:10px;">
+      <span id="noticeCountdown" style="font-size:11px;color:var(--text-muted);">请阅读以上内容（5s）</span>
+      <button id="noticeConfirmBtn" class="btn primary" disabled onclick="closeNotice()" style="min-width:80px;">我知道了</button>
+    </div>
+  </div>
+</div>
 <div class="bottom-bar">
   <select class="example-select" id="exampleSelect" onchange="loadExample(this.value)">
     <option value="">-- 加载示例 --</option>
@@ -416,7 +446,31 @@ function applyTheme(theme) {
     btn.title = '切换到亮色主题';
   }
 }
+// 使用须知弹窗逻辑
+function closeNotice() {
+  document.getElementById('noticeOverlay').style.display = 'none';
+  localStorage.setItem('notice-confirmed', '1');
+}
 
+(function initNotice() {
+  // 已确认过则不再显示
+  if (localStorage.getItem('notice-confirmed') === '1') return;
+
+  let sec = 5;
+  const btn = document.getElementById('noticeConfirmBtn');
+  const countdown = document.getElementById('noticeCountdown');
+
+  const timer = setInterval(function() {
+    sec--;
+    if (sec <= 0) {
+      clearInterval(timer);
+      btn.disabled = false;
+      countdown.textContent = '请继续';
+    } else {
+      countdown.textContent = '请阅读以上内容（' + sec + 's）';
+    }
+  }, 1000);
+})();
 function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme');
   applyTheme(current === 'light' ? 'dark' : 'light');
