@@ -452,15 +452,24 @@ function closeNotice() {
   localStorage.setItem('notice-confirmed', '1');
 }
 
-(function initNotice() {
-  // 已确认过则不再显示
-  if (localStorage.getItem('notice-confirmed') === '1') return;
-
-  let sec = 5;
+function initNotice() {
+  const overlay = document.getElementById('noticeOverlay');
   const btn = document.getElementById('noticeConfirmBtn');
   const countdown = document.getElementById('noticeCountdown');
 
-  const timer = setInterval(function() {
+  // 已确认过，直接隐藏弹窗，不跑倒计时
+  if (localStorage.getItem('notice-confirmed') === '1') {
+    overlay.style.display = 'none';
+    return;
+  }
+
+  // 未确认，显示弹窗并启动倒计时
+  overlay.style.display = 'flex';
+  btn.disabled = true;
+  let sec = 5;
+  countdown.textContent = '请阅读以上内容（5s）';
+
+  const timer = setInterval(function () {
     sec--;
     if (sec <= 0) {
       clearInterval(timer);
@@ -470,7 +479,7 @@ function closeNotice() {
       countdown.textContent = '请阅读以上内容（' + sec + 's）';
     }
   }, 1000);
-})();
+}
 function toggleTheme() {
   const current = document.documentElement.getAttribute('data-theme');
   applyTheme(current === 'light' ? 'dark' : 'light');
@@ -482,6 +491,7 @@ function toggleTheme() {
   applyTheme(saved || (preferLight ? 'light' : 'dark'));
   runMatch();
 })();
+initNotice();
 </script>
 </body>
 </html>
