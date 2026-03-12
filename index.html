@@ -1,0 +1,641 @@
+       <!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+  <meta name="theme-color" content="#1a1a1a" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="状态栏预览" />
+  <title>角色状态栏预览工具</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-base:#141414; --bg-panel:#1e1e1e; --bg-input:#252525; --bg-hover:#2c2c2c;
+      --bg-active:#333333; --border-subtle:#2e2e2e; --border-mid:#3a3a3a;
+      --border-strong:#505050; --text-primary:#e8e8e8; --text-secondary:#a0a0a0;
+      --text-muted:#636363; --text-label:#c0c0c0; --accent:#d0d0d0; --accent-dim:#888888;
+      --success:#7aad7a; --warning:#c8a96e; --danger:#b86060; --info:#6e9ab8;
+      --radius-sm:4px; --radius-md:8px; --radius-lg:12px;
+      --font-mono:'Courier New',Courier,monospace;
+      --font-sans:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+      --safe-bottom:env(safe-area-inset-bottom,0px);
+    }
+    [data-theme="light"] {
+      --bg-base:#f0f0f0; --bg-panel:#e8e8e8; --bg-input:#ffffff; --bg-hover:#dcdcdc;
+      --bg-active:#d4d4d4; --border-subtle:#d0d0d0; --border-mid:#c0c0c0;
+      --border-strong:#a0a0a0; --text-primary:#1a1a1a; --text-secondary:#444444;
+      --text-muted:#888888; --text-label:#2e2e2e; --accent:#1a1a1a; --accent-dim:#666666;
+      --success:#3a7a3a; --warning:#8a6020; --danger:#8a2020; --info:#204a6e;
+    }
+    html,body { height:100%; background:var(--bg-base); color:var(--text-primary); font-family:var(--font-sans); font-size:14px; line-height:1.5; -webkit-font-smoothing:antialiased; }
+    body { display:flex; flex-direction:column; min-height:100dvh; padding-bottom:var(--safe-bottom); }
+    .topbar { display:flex; align-items:center; gap:10px; padding:12px 16px; background:var(--bg-panel); border-bottom:1px solid var(--border-subtle); position:sticky; top:0; z-index:100; }
+    .topbar-icon { width:22px; height:22px; flex-shrink:0; }
+    .topbar-title { font-size:13px; font-weight:600; color:var(--text-label); letter-spacing:0.04em; text-transform:uppercase; }
+    .topbar-spacer { flex:1; }
+    .topbar-badge { font-size:10px; color:var(--text-muted); border:1px solid var(--border-mid); border-radius:var(--radius-sm); padding:1px 6px; letter-spacing:0.05em; }
+    .main { flex:1; display:grid; grid-template-columns:1fr 1fr; grid-template-rows:auto auto 1fr; gap:0; overflow:hidden; }
+    @media(max-width:700px){ .main { display:flex; flex-direction:column; overflow:visible; } }
+    .section { padding:14px 16px; border-right:1px solid var(--border-subtle); border-bottom:1px solid var(--border-subtle); display:flex; flex-direction:column; gap:8px; overflow:auto; }
+    .section:last-child,.section.no-right-border { border-right:none; }
+    .section-label { font-size:10px; font-weight:700; text-transform:uppercase; letter-spacing:0.1em; color:var(--text-muted); display:flex; align-items:center; gap:6px; }
+    .section-label svg { opacity:0.6; }
+    textarea,input[type="text"] { width:100%; background:var(--bg-input); border:1px solid var(--border-mid); border-radius:var(--radius-sm); color:var(--text-primary); font-family:var(--font-mono); font-size:12px; padding:8px 10px; resize:vertical; outline:none; transition:border-color 0.15s; -webkit-appearance:none; }
+    textarea:focus,input[type="text"]:focus { border-color:var(--border-strong); }
+    textarea.error,input.error { border-color:var(--danger); }
+    textarea { min-height:70px; }
+    .input-prompt { min-height:52px; }
+    .tabs { display:flex; gap:2px; background:var(--bg-input); border-radius:var(--radius-sm); padding:2px; border:1px solid var(--border-subtle); }
+    .tab-btn { flex:1; padding:5px 8px; font-size:11px; font-family:var(--font-sans); font-weight:600; color:var(--text-muted); background:transparent; border:none; border-radius:var(--radius-sm); cursor:pointer; text-transform:uppercase; letter-spacing:0.06em; transition:background 0.12s,color 0.12s; }
+    .tab-btn.active { background:var(--bg-active); color:var(--text-label); }
+    .template-section { grid-column:1/3; }
+    @media(max-width:700px){ .template-section { grid-column:unset; } }
+    .capture-list { display:flex; flex-wrap:wrap; gap:6px; }
+    .capture-item { display:flex; align-items:center; gap:5px; background:var(--bg-input); border:1px solid var(--border-mid); border-radius:var(--radius-sm); padding:3px 8px; font-family:var(--font-mono); font-size:11px; }
+    .capture-index { color:var(--accent-dim); font-size:10px; font-weight:700; }
+    .capture-value { color:var(--accent); }
+    .status-line { font-size:11px; padding:4px 8px; border-radius:var(--radius-sm); border:1px solid transparent; }
+    .status-line.ok { color:var(--success); background:rgba(122,173,122,0.07); border-color:rgba(122,173,122,0.2); }
+    .status-line.fail { color:var(--danger); background:rgba(184,96,96,0.07); border-color:rgba(184,96,96,0.2); }
+    .status-line.warn { color:var(--warning); background:rgba(200,169,110,0.07); border-color:rgba(200,169,110,0.2); }
+    .preview-section { grid-column:1/3; min-height:180px; border-bottom:none; }
+    @media(max-width:700px){ .preview-section { grid-column:unset; min-height:140px; } }
+    .preview-frame { border:1px solid var(--border-mid); border-radius:var(--radius-md); background:var(--bg-input); padding:16px; min-height:100px; overflow:auto; position:relative; }
+    .preview-empty { color:var(--text-muted); font-size:12px; font-family:var(--font-mono); text-align:center; padding:24px 0; }
+    .bottom-bar { display:flex; align-items:center; gap:8px; padding:10px 16px; padding-bottom:calc(10px + var(--safe-bottom)); background:var(--bg-panel); border-top:1px solid var(--border-subtle); flex-wrap:wrap; }
+    .btn { padding:7px 14px; font-size:12px; font-family:var(--font-sans); font-weight:600; border-radius:var(--radius-sm); border:1px solid var(--border-mid); cursor:pointer; letter-spacing:0.04em; transition:background 0.12s,border-color 0.12s; background:var(--bg-active); color:var(--text-label); }
+    .btn:hover { background:var(--bg-hover); border-color:var(--border-strong); }
+    .btn.primary { background:var(--text-secondary); color:var(--bg-base); border-color:var(--text-secondary); }
+    .btn.primary:hover { background:var(--text-primary); border-color:var(--text-primary); }
+    .btn.danger-btn { color:var(--danger); border-color:rgba(184,96,96,0.3); }
+    .btn-spacer { flex:1; }
+    .example-select { background:var(--bg-input); border:1px solid var(--border-mid); border-radius:var(--radius-sm); color:var(--text-label); font-size:12px; padding:6px 8px; outline:none; cursor:pointer; -webkit-appearance:none; appearance:none; padding-right:22px; background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23636363'/%3E%3C/svg%3E"); background-repeat:no-repeat; background-position:right 7px center; }
+    .code-hint { font-size:10px; color:var(--text-muted); font-family:var(--font-mono); line-height:1.7; }
+    code { background:var(--bg-active); border-radius:3px; padding:0 4px; color:var(--text-label); font-family:var(--font-mono); }
+    hr.divider { border:none; border-top:1px solid var(--border-subtle); margin:2px 0; }
+    @media(min-width:701px){ .section-left { border-right:1px solid var(--border-subtle); } .section-right { border-right:none; } }
+    ::-webkit-scrollbar { width:4px; height:4px; }
+    ::-webkit-scrollbar-track { background:transparent; }
+    ::-webkit-scrollbar-thumb { background:var(--border-strong); border-radius:2px; }
+    @keyframes flash-ok { 0%{background:rgba(122,173,122,0.15);} 100%{background:transparent;} }
+    .flash-ok { animation:flash-ok 0.5s ease-out; }
+    .theme-toggle { width:30px; height:30px; border-radius:var(--radius-sm); border:1px solid var(--border-mid); background:var(--bg-input); cursor:pointer; display:flex; align-items:center; justify-content:center; padding:0; transition:background 0.15s,border-color 0.15s; flex-shrink:0; }
+    .theme-toggle:hover { background:var(--bg-hover); border-color:var(--border-strong); }
+    .theme-toggle svg { display:block; }
+  </style>
+</head>
+<body>
+
+<header class="topbar">
+  <svg class="topbar-icon" viewBox="0 0 22 22" fill="none">
+    <rect x="1" y="4" width="20" height="14" rx="2" stroke="#888" stroke-width="1.5"/>
+    <rect x="4" y="7" width="6" height="2.5" rx="1" fill="#aaa"/>
+    <rect x="4" y="12" width="10" height="1.5" rx="0.75" fill="#555"/>
+    <rect x="13" y="7" width="5" height="5" rx="1" stroke="#777" stroke-width="1.2"/>
+  </svg>
+  <span class="topbar-title">状态栏预览</span>
+  <div class="topbar-spacer"></div>
+  <button class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换主题"></button>
+</header>
+
+<div class="main" id="mainGrid">
+
+  <div class="section section-left" id="sectionPrompt">
+    <div class="section-label">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <rect x="0.5" y="2.5" width="11" height="7" rx="1.5" stroke="#636363" stroke-width="1"/>
+        <path d="M3 6h6M3 8h4" stroke="#636363" stroke-width="1" stroke-linecap="round"/>
+      </svg>
+      Prompt 后缀（待解析文本）
+    </div>
+    <textarea class="input-prompt" id="inputPrompt" spellcheck="false"
+      placeholder="把 AI 输出的那一行粘贴到这里">[WXCHAT|group=贺一然的内心小剧场|mood=开心|emoji=^^|favor=99|favormax=100|nameA=贺一然|nameB=贺小一|nameC=贺小然|msgA1=她真的喜欢我吧？|msgB1=她喜不喜欢你我不知道，但你一定喜欢她|msgC1=好感度都99了还问！|msgA2=那我要不要控制一下？|msgB2=控制个屁！控制控制她就跟别人跑了！]</textarea>
+    <div id="statusLine" class="status-line warn">请填写正则表达式</div>
+  </div>
+
+  <div class="section section-right" id="sectionCaptures">
+    <div class="section-label">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <circle cx="6" cy="6" r="4.5" stroke="#636363" stroke-width="1"/>
+        <path d="M4 6l1.5 1.5L8 4" stroke="#636363" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      正则捕获结果
+    </div>
+    <div class="capture-list" id="captureList">
+      <span style="font-size:11px;color:var(--text-muted);">等待匹配...</span>
+    </div>
+  </div>
+
+  <div class="section section-left" id="sectionRegex">
+    <div class="section-label">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <path d="M2 10L10 2M5 2h5v5" stroke="#636363" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      正则表达式
+    </div>
+    <input type="text" id="inputRegex" spellcheck="false"
+      placeholder="填入正则表达式"
+      value="$$WXCHAT\|group=(.*?)\|mood=(.*?)\|emoji=(.*?)\|favor=(\d+)\|favormax=(\d+)\|nameA=(.*?)\|nameB=(.*?)\|nameC=(.*?)\|msgA1=(.*?)\|msgB1=(.*?)\|msgC1=(.*?)\|msgA2=(.*?)\|msgB2=(.*?)$$" />
+    <div class="code-hint">
+      使用 <code>(\d+)</code> 匹配数字  &nbsp;|&nbsp; <code>(.*?)</code> 匹配文本 &nbsp;|&nbsp; 禁止命名捕获组
+    </div>
+  </div>
+
+  <div class="section section-right" id="sectionTemplate">
+    <div class="section-label">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <rect x="0.5" y="1.5" width="11" height="9" rx="1.5" stroke="#636363" stroke-width="1"/>
+        <path d="M3.5 4.5L1.5 6l2 1.5M8.5 4.5L10.5 6l-2 1.5M5.5 8.5l1-5" stroke="#636363" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      HTML 模板
+    </div>
+    <div class="tabs" id="templateTabs">
+      <button class="tab-btn active" data-tab="editor" onclick="switchTab('editor')">编辑</button>
+      <button class="tab-btn" data-tab="raw" onclick="switchTab('raw')">原始</button>
+    </div>
+    <textarea id="inputTemplate" spellcheck="false" style="min-height:90px;"
+      placeholder="例：&lt;b&gt;HP：$1&lt;/b&gt;"
+><style>
+.wx-wrap {
+  width: 100%;
+  max-width: 400px;
+  background: #ededed;
+  border-radius: 14px;
+  overflow: hidden;
+  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.13);
+}
+.wx-header {
+  background: #f2f2f2;
+  text-align: center;
+  padding: 15px 16px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #555;
+  border-bottom: 1px solid #e0e0e0;
+  letter-spacing: 0.5px;
+}
+.wx-pin-wrap {
+  background: #ededed;
+  padding: 8px 10px;
+  border-bottom: 1px solid #e0e0e0;
+}
+.wx-pin-card {
+  background: #fff;
+  border-radius: 8px;
+  padding: 8px 11px;
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+}
+.wx-pin-icon {
+  font-size: 15px;
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+.wx-pin-text {
+  font-size: 12px;
+  color: #555;
+  line-height: 1.7;
+  word-break: break-all;
+}
+.wx-pin-text b {
+  font-weight: 700;
+  color: #222;
+  font-size: 12px;
+}
+.wx-chat {
+  padding: 6px 10px 14px;
+  background: #ededed;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.wx-date-divider {
+  text-align: center;
+  font-size: 11px;
+  color: #aaa;
+  padding: 6px 0 2px;
+}
+.wx-msg {
+  display: flex;
+  justify-content: flex-start;
+}
+.wx-msg.right {
+  justify-content: flex-end;
+}
+.wx-msg-body {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 75%;
+}
+.wx-msg.right .wx-msg-body {
+  align-items: flex-end;
+}
+.wx-nickname {
+  font-size: 11px;
+  color: #888;
+  padding-left: 2px;
+}
+.wx-msg.right .wx-nickname {
+  padding-left: 0;
+  padding-right: 2px;
+}
+.wx-bubble {
+  background: #fff;
+  color: #1a1a1a;
+  font-size: 13.5px;
+  line-height: 1.55;
+  padding: 8px 11px;
+  border-radius: 4px 10px 10px 10px;
+  position: relative;
+  word-break: break-all;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
+}
+.wx-bubble::before {
+  content: "";
+  position: absolute;
+  left: -5px;
+  top: 10px;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 6px solid #fff;
+}
+.wx-msg.right .wx-bubble {
+  background: #95ec69;
+  border-radius: 10px 4px 10px 10px;
+}
+.wx-msg.right .wx-bubble::before {
+  display: none;
+}
+.wx-msg.right .wx-bubble::after {
+  content: "";
+  position: absolute;
+  right: -5px;
+  top: 10px;
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-left: 6px solid #95ec69;
+}
+</style>
+<div class="wx-wrap">
+  <div class="wx-header">$1</div>
+  <div class="wx-pin-wrap">
+    <div class="wx-pin-card">
+      <div class="wx-pin-icon">📣</div>
+      <div class="wx-pin-text"><b>$6</b>：心情：$2 $3　好感度：$4/$5 $3</div>
+    </div>
+  </div>
+  <div class="wx-chat">
+    <div class="wx-date-divider">以下内容仅自己可见</div>
+    <div class="wx-msg right">
+      <div class="wx-msg-body">
+        <div class="wx-nickname">$6</div>
+        <div class="wx-bubble">$9</div>
+      </div>
+    </div>
+    <div class="wx-msg">
+      <div class="wx-msg-body">
+        <div class="wx-nickname">$7</div>
+        <div class="wx-bubble">$10</div>
+      </div>
+    </div>
+    <div class="wx-msg">
+      <div class="wx-msg-body">
+        <div class="wx-nickname">$8</div>
+        <div class="wx-bubble">$11</div>
+      </div>
+    </div>
+    <div class="wx-msg right">
+      <div class="wx-msg-body">
+        <div class="wx-nickname">$6</div>
+        <div class="wx-bubble">$12</div>
+      </div>
+    </div>
+    <div class="wx-msg">
+      <div class="wx-msg-body">
+        <div class="wx-nickname">$7</div>
+        <div class="wx-bubble">$13</div>
+      </div>
+    </div>
+  </div>
+</div></textarea>
+    <div class="code-hint">
+      用 <code>$1</code> <code>$2</code> ... 代表捕获组的值，支持完整 HTML
+    </div>
+  </div>
+
+  <div class="section preview-section" id="sectionPreview">
+    <div class="section-label">
+      <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
+        <circle cx="6" cy="6" r="4.5" stroke="#636363" stroke-width="1"/>
+        <circle cx="6" cy="6" r="1.5" fill="#636363"/>
+        <path d="M1 6c1.5-3 8.5-3 10 0" stroke="#636363" stroke-width="1" stroke-linecap="round"/>
+      </svg>
+      渲染预览
+    </div>
+    <div class="preview-frame" id="previewFrame">
+      <div class="preview-empty" id="previewEmpty">尚未匹配，预览将在此处显示</div>
+      <div id="previewRender"></div>
+    </div>
+    <div id="rawPanel" style="display:none;">
+      <div class="section-label" style="margin-top:8px;">替换后 HTML 源码</div>
+      <textarea id="rawOutput" readonly style="min-height:60px;opacity:0.7;cursor:default;"></textarea>
+    </div>
+  </div>
+
+</div>
+
+<div class="bottom-bar">
+  <select class="example-select" id="exampleSelect" onchange="loadExample(this.value)">
+    <option value="">-- 加载示例 --</option>
+    <option value="wxchat">微信群聊状态栏</option>
+    <option value="hp_mp">HP / MP 数值</option>
+    <option value="emotion">情绪状态</option>
+  </select>
+  <div class="btn-spacer"></div>
+  <button class="btn" onclick="copyResult()">复制预览 HTML</button>
+  <button class="btn primary" onclick="runMatch()">立即匹配</button>
+  <button class="btn danger-btn" onclick="clearAll()">清空</button>
+</div>
+
+<script>
+let currentCaptures = [];
+let currentTab = 'editor';
+
+const EXAMPLES = {
+  wxchat: {
+    prompt: '[WXCHAT|group=贺一然的内心小剧场|mood=开心|emoji=^^|favor=99|favormax=100|nameA=贺一然|nameB=贺小一|nameC=贺小然|msgA1=她真的喜欢我吧？|msgB1=她喜不喜欢你我不知道，但你一定喜欢她|msgC1=好感度都99了还问！|msgA2=那我要不要控制一下？|msgB2=控制个屁！控制控制她就跟别人跑了！]',
+    regex: '\$$WXCHAT\\|group=(.*?)\\|mood=(.*?)\\|emoji=(.*?)\\|favor=(\\d+)\\|favormax=(\\d+)\\|nameA=(.*?)\\|nameB=(.*?)\\|nameC=(.*?)\\|msgA1=(.*?)\\|msgB1=(.*?)\\|msgC1=(.*?)\\|msgA2=(.*?)\\|msgB2=(.*?)\$$',
+    template: `<style>
+.wx-wrap{width:100%;max-width:400px;background:#ededed;border-radius:14px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.13);}
+.wx-header{background:#f2f2f2;text-align:center;padding:15px 16px;font-size:13px;font-weight:500;color:#555;border-bottom:1px solid #e0e0e0;letter-spacing:0.5px;}
+.wx-pin-wrap{background:#ededed;padding:8px 10px;border-bottom:1px solid #e0e0e0;}
+.wx-pin-card{background:#fff;border-radius:8px;padding:8px 11px;display:flex;align-items:flex-start;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
+.wx-pin-icon{font-size:15px;flex-shrink:0;margin-top:1px;}
+.wx-pin-text{font-size:12px;color:#555;line-height:1.7;word-break:break-all;}
+.wx-pin-text b{font-weight:700;color:#222;font-size:12px;}
+.wx-chat{padding:6px 10px 14px;background:#ededed;display:flex;flex-direction:column;gap:10px;}
+.wx-date-divider{text-align:center;font-size:11px;color:#aaa;padding:6px 0 2px;}
+.wx-msg{display:flex;justify-content:flex-start;}
+.wx-msg.right{justify-content:flex-end;}
+.wx-msg-body{display:flex;flex-direction:column;gap:3px;max-width:75%;}
+.wx-msg.right .wx-msg-body{align-items:flex-end;}
+.wx-nickname{font-size:11px;color:#888;padding-left:2px;}
+.wx-msg.right .wx-nickname{padding-left:0;padding-right:2px;}
+.wx-bubble{background:#fff;color:#1a1a1a;font-size:13.5px;line-height:1.55;padding:8px 11px;border-radius:4px 10px 10px 10px;position:relative;word-break:break-all;box-shadow:0 1px 2px rgba(0,0,0,0.06);}
+.wx-bubble::before{content:"";position:absolute;left:-5px;top:10px;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:6px solid #fff;}
+.wx-msg.right .wx-bubble{background:#95ec69;border-radius:10px 4px 10px 10px;}
+.wx-msg.right .wx-bubble::before{display:none;}
+.wx-msg.right .wx-bubble::after{content:"";position:absolute;right:-5px;top:10px;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:6px solid #95ec69;}
+</style>
+<div class="wx-wrap">
+  <div class="wx-header">$1</div>
+  <div class="wx-pin-wrap">
+    <div class="wx-pin-card">
+      <div class="wx-pin-icon">📣</div>
+      <div class="wx-pin-text"><b>$6</b>：心情：$2 $3　好感度：$4/$5 $3</div>
+    </div>
+  </div>
+  <div class="wx-chat">
+    <div class="wx-date-divider">以下内容仅自己可见</div>
+    <div class="wx-msg right"><div class="wx-msg-body"><div class="wx-nickname">$6</div><div class="wx-bubble">$9</div></div></div>
+    <div class="wx-msg"><div class="wx-msg-body"><div class="wx-nickname">$7</div><div class="wx-bubble">$10</div></div></div>
+    <div class="wx-msg"><div class="wx-msg-body"><div class="wx-nickname">$8</div><div class="wx-bubble">$11</div></div></div>
+    <div class="wx-msg right"><div class="wx-msg-body"><div class="wx-nickname">$6</div><div class="wx-bubble">$12</div></div></div>
+    <div class="wx-msg"><div class="wx-msg-body"><div class="wx-nickname">$7</div><div class="wx-bubble">$13</div></div></div>
+  </div>
+</div>`
+  },
+  hp_mp: {
+    prompt: '[STATUS: HP=87, MP=34]',
+    regex: '\$$STATUS: HP=(\\d+), MP=(\\d+)\$$',
+    template: `<div style="display:flex;gap:20px;font-family:monospace;">
+  <span style="color:#7aad7a;">HP : <b>$1</b></span>
+  <span style="color:#6e9ab8;">MP : <b>$2</b></span>
+</div>`
+  },
+  emotion: {
+    prompt: '[心情=开心, 体力=65%, 饥饿=低]',
+    regex: '\$$心情=(.*?), 体力=(\\d+)%, 饥饿=(.*?)\$$',
+    template: `<div style="display:flex;flex-direction:column;gap:6px;font-size:13px;">
+  <div style="color:#c8a96e;">心情：<b>$1</b></div>
+  <div style="background:#252525;border-radius:4px;overflow:hidden;height:10px;width:140px;">
+    <div style="width:$2%;height:100%;background:#7aad7a;"></div>
+  </div>
+  <div style="color:#a0a0a0;font-size:11px;">体力 $2% &nbsp;|&nbsp; 饥饿：$3</div>
+</div>`
+  }
+};
+
+function runMatch() {
+  const promptText   = document.getElementById('inputPrompt').value;
+  const regexText    = document.getElementById('inputRegex').value;
+  const templateText = document.getElementById('inputTemplate').value;
+  const regexInput   = document.getElementById('inputRegex');
+  const statusLine   = document.getElementById('statusLine');
+  const captureList  = document.getElementById('captureList');
+  const previewEmpty = document.getElementById('previewEmpty');
+  const previewRender= document.getElementById('previewRender');
+  const rawOutput    = document.getElementById('rawOutput');
+
+  regexInput.classList.remove('error');
+  currentCaptures = [];
+
+  if (!regexText.trim()) {
+    statusLine.className = 'status-line warn';
+    statusLine.textContent = '请填写正则表达式';
+    captureList.innerHTML = '<span style="font-size:11px;color:var(--text-muted);">等待匹配...</span>';
+    previewEmpty.style.display = '';
+    previewRender.innerHTML = '';
+    return;
+  }
+
+  let regex;
+  try {
+    regex = new RegExp(regexText);
+  } catch(e) {
+    regexInput.classList.add('error');
+    statusLine.className = 'status-line fail';
+    statusLine.textContent = '正则语法错误：' + e.message;
+    captureList.innerHTML = '<span style="font-size:11px;color:var(--danger);">正则无效</span>';
+    previewEmpty.style.display = '';
+    previewRender.innerHTML = '';
+    return;
+  }
+
+  const match = promptText.match(regex);
+  if (!match) {
+    statusLine.className = 'status-line fail';
+    statusLine.textContent = '未匹配 — 请检查文本或正则';
+    captureList.innerHTML = '<span style="font-size:11px;color:var(--danger);">无匹配结果</span>';
+    previewEmpty.style.display = '';
+    previewRender.innerHTML = '';
+    return;
+  }
+
+  currentCaptures = match.slice(1);
+
+  if (currentCaptures.length === 0) {
+    captureList.innerHTML = '<span style="font-size:11px;color:var(--text-muted);">匹配成功，但无捕获组</span>';
+  } else {
+    captureList.innerHTML = currentCaptures.map((v, i) =>
+      `<div class="capture-item">
+        <span class="capture-index">$${i+1}</span>
+        <span class="capture-value">${escapeHtml(v)}</span>
+      </div>`
+    ).join('');
+  }
+
+  statusLine.className = 'status-line ok';
+  statusLine.textContent = `匹配成功 — 共 ${currentCaptures.length} 个捕获组`;
+
+  let rendered = templateText;
+  currentCaptures.forEach((val, i) => {
+    rendered = rendered.split(`$${i+1}`).join(val);
+  });
+
+  // 修复：用独立容器渲染，不覆盖 previewEmpty 节点
+  previewEmpty.style.display = 'none';
+  previewRender.innerHTML = rendered;
+  rawOutput.value = rendered;
+
+  const previewFrame = document.getElementById('previewFrame');
+  previewFrame.classList.remove('flash-ok');
+  void previewFrame.offsetWidth;
+  previewFrame.classList.add('flash-ok');
+
+  if (currentTab === 'raw') {
+    document.getElementById('rawPanel').style.display = 'block';
+  }
+}
+
+function setPreviewEmpty() {
+  document.getElementById('previewEmpty').style.display = '';
+  document.getElementById('previewRender').innerHTML = '';
+  document.getElementById('rawOutput').value = '';
+}
+
+function switchTab(tab) {
+  currentTab = tab;
+  document.querySelectorAll('.tab-btn').forEach(btn => {
+    btn.classList.toggle('active', btn.dataset.tab === tab);
+  });
+   document.getElementById('rawPanel').style.display = (tab === 'raw') ? 'block' : 'none';
+}
+
+function loadExample(key) {
+  if (!key) return;
+  const ex = EXAMPLES[key];
+  if (!ex) return;
+  document.getElementById('inputPrompt').value   = ex.prompt;
+  document.getElementById('inputRegex').value    = ex.regex;
+  document.getElementById('inputTemplate').value = ex.template;
+  document.getElementById('exampleSelect').value = '';
+  runMatch();
+}
+
+function copyResult() {
+  const raw = document.getElementById('rawOutput').value;
+  if (!raw) { showToast('暂无可复制的内容'); return; }
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(raw).then(() => showToast('已复制到剪贴板'));
+  } else {
+    const ta = document.createElement('textarea');
+    ta.value = raw;
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    showToast('已复制');
+  }
+}
+
+function clearAll() {
+  document.getElementById('inputPrompt').value   = '';
+  document.getElementById('inputRegex').value    = '';
+  document.getElementById('inputTemplate').value = '';
+  document.getElementById('inputRegex').classList.remove('error');
+  document.getElementById('statusLine').className = 'status-line warn';
+  document.getElementById('statusLine').textContent = '请填写正则表达式';
+  document.getElementById('captureList').innerHTML = '<span style="font-size:11px;color:var(--text-muted);">等待匹配...</span>';
+  setPreviewEmpty();
+}
+
+function showToast(msg) {
+  let toast = document.getElementById('toastEl');
+  if (!toast) {
+    toast = document.createElement('div');
+    toast.id = 'toastEl';
+    toast.style.cssText = `
+      position:fixed;bottom:80px;left:50%;transform:translateX(-50%);
+      background:#333;color:#e8e8e8;font-size:12px;
+      padding:7px 16px;border-radius:20px;border:1px solid #505050;
+      pointer-events:none;z-index:9999;opacity:0;
+      transition:opacity 0.2s;white-space:nowrap;
+    `;
+    document.body.appendChild(toast);
+  }
+  toast.textContent = msg;
+  toast.style.opacity = '1';
+  clearTimeout(toast._timer);
+  toast._timer = setTimeout(() => { toast.style.opacity = '0'; }, 1800);
+}
+
+function escapeHtml(str) {
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+let debounceTimer;
+function debounceRun() {
+  clearTimeout(debounceTimer);
+  debounceTimer = setTimeout(runMatch, 320);
+}
+
+document.getElementById('inputPrompt').addEventListener('input', debounceRun);
+document.getElementById('inputRegex').addEventListener('input', debounceRun);
+document.getElementById('inputTemplate').addEventListener('input', debounceRun);
+
+const MOON_SVG = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+  <path d="M12.5 8.5A5.5 5.5 0 0 1 5.5 1.5a5.5 5.5 0 1 0 7 7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+</svg>`;
+
+const SUN_SVG = `<svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+  <circle cx="7" cy="7" r="2.8" stroke="currentColor" stroke-width="1.2"/>
+  <path d="M7 1v1.5M7 11.5V13M1 7h1.5M11.5 7H13M2.93 2.93l1.06 1.06M10.01 10.01l1.06 1.06M2.93 11.07l1.06-1.06M10.01 3.99l1.06-1.06" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+</svg>`;
+
+function applyTheme(theme) {
+  document.documentElement.setAttribute('data-theme', theme);
+  localStorage.setItem('statusbar-theme', theme);
+  const btn = document.getElementById('themeToggle');
+  if (theme === 'light') {
+    btn.innerHTML = MOON_SVG;
+    btn.title = '切换到暗色主题';
+  } else {
+    btn.innerHTML = SUN_SVG;
+    btn.title = '切换到亮色主题';
+  }
+}
+
+function toggleTheme() {
+  const current = document.documentElement.getAttribute('data-theme');
+  applyTheme(current === 'light' ? 'dark' : 'light');
+}
+
+(function init() {
+  const saved = localStorage.getItem('statusbar-theme');
+  const preferLight = window.matchMedia('(prefers-color-scheme: light)').matches;
+  applyTheme(saved || (preferLight ? 'light' : 'dark'));
+  runMatch();
+})();
+</script>
+</body>
+</html>
