@@ -110,7 +110,7 @@
       Prompt 后缀（待解析文本）
     </div>
     <textarea class="input-prompt" id="inputPrompt" spellcheck="false"
-      placeholder="把 AI 输出的那一行粘贴到这里">[WXCHAT|group=贺一然的内心小剧场|mood=开心|emoji=^^|favor=99|favormax=100|nameA=贺一然|nameB=贺小一|nameC=贺小然|msgA1=她真的喜欢我吧？|msgB1=她喜不喜欢你我不知道，但你一定喜欢她|msgC1=好感度都99了还问！|msgA2=那我要不要控制一下？|msgB2=控制个屁！控制控制她就跟别人跑了！]</textarea>
+      placeholder="把 AI 输出的那一行粘贴到这里"></textarea>
     <div id="statusLine" class="status-line warn">请填写正则表达式</div>
   </div>
 
@@ -136,7 +136,7 @@
     </div>
     <input type="text" id="inputRegex" spellcheck="false"
       placeholder="填入正则表达式"
-      value="$$WXCHAT\|group=(.*?)\|mood=(.*?)\|emoji=(.*?)\|favor=(\d+)\|favormax=(\d+)\|nameA=(.*?)\|nameB=(.*?)\|nameC=(.*?)\|msgA1=(.*?)\|msgB1=(.*?)\|msgC1=(.*?)\|msgA2=(.*?)\|msgB2=(.*?)$$" />
+      value="" />
     <div class="code-hint">
       使用 <code>(\d+)</code> 匹配数字  &nbsp;|&nbsp; <code>(.*?)</code> 匹配文本 &nbsp;|&nbsp; 禁止命名捕获组
     </div>
@@ -156,173 +156,7 @@
     </div>
     <textarea id="inputTemplate" spellcheck="false" style="min-height:90px;"
       placeholder="例：&lt;b&gt;HP：$1&lt;/b&gt;"
-><style>
-.wx-wrap {
-  width: 100%;
-  max-width: 400px;
-  background: #ededed;
-  border-radius: 14px;
-  overflow: hidden;
-  font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Helvetica Neue", sans-serif;
-  box-shadow: 0 4px 20px rgba(0,0,0,0.13);
-}
-.wx-header {
-  background: #f2f2f2;
-  text-align: center;
-  padding: 15px 16px;
-  font-size: 13px;
-  font-weight: 500;
-  color: #555;
-  border-bottom: 1px solid #e0e0e0;
-  letter-spacing: 0.5px;
-}
-.wx-pin-wrap {
-  background: #ededed;
-  padding: 8px 10px;
-  border-bottom: 1px solid #e0e0e0;
-}
-.wx-pin-card {
-  background: #fff;
-  border-radius: 8px;
-  padding: 8px 11px;
-  display: flex;
-  align-items: flex-start;
-  gap: 8px;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.05);
-}
-.wx-pin-icon {
-  font-size: 15px;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-.wx-pin-text {
-  font-size: 12px;
-  color: #555;
-  line-height: 1.7;
-  word-break: break-all;
-}
-.wx-pin-text b {
-  font-weight: 700;
-  color: #222;
-  font-size: 12px;
-}
-.wx-chat {
-  padding: 6px 10px 14px;
-  background: #ededed;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-.wx-date-divider {
-  text-align: center;
-  font-size: 11px;
-  color: #aaa;
-  padding: 6px 0 2px;
-}
-.wx-msg {
-  display: flex;
-  justify-content: flex-start;
-}
-.wx-msg.right {
-  justify-content: flex-end;
-}
-.wx-msg-body {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-  max-width: 75%;
-}
-.wx-msg.right .wx-msg-body {
-  align-items: flex-end;
-}
-.wx-nickname {
-  font-size: 11px;
-  color: #888;
-  padding-left: 2px;
-}
-.wx-msg.right .wx-nickname {
-  padding-left: 0;
-  padding-right: 2px;
-}
-.wx-bubble {
-  background: #fff;
-  color: #1a1a1a;
-  font-size: 13.5px;
-  line-height: 1.55;
-  padding: 8px 11px;
-  border-radius: 4px 10px 10px 10px;
-  position: relative;
-  word-break: break-all;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.06);
-}
-.wx-bubble::before {
-  content: "";
-  position: absolute;
-  left: -5px;
-  top: 10px;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  border-right: 6px solid #fff;
-}
-.wx-msg.right .wx-bubble {
-  background: #95ec69;
-  border-radius: 10px 4px 10px 10px;
-}
-.wx-msg.right .wx-bubble::before {
-  display: none;
-}
-.wx-msg.right .wx-bubble::after {
-  content: "";
-  position: absolute;
-  right: -5px;
-  top: 10px;
-  border-top: 5px solid transparent;
-  border-bottom: 5px solid transparent;
-  border-left: 6px solid #95ec69;
-}
-</style>
-<div class="wx-wrap">
-  <div class="wx-header">$1</div>
-  <div class="wx-pin-wrap">
-    <div class="wx-pin-card">
-      <div class="wx-pin-icon">📣</div>
-      <div class="wx-pin-text"><b>$6</b>：心情：$2 $3　好感度：$4/$5 $3</div>
-    </div>
-  </div>
-  <div class="wx-chat">
-    <div class="wx-date-divider">以下内容仅自己可见</div>
-    <div class="wx-msg right">
-      <div class="wx-msg-body">
-        <div class="wx-nickname">$6</div>
-        <div class="wx-bubble">$9</div>
-      </div>
-    </div>
-    <div class="wx-msg">
-      <div class="wx-msg-body">
-        <div class="wx-nickname">$7</div>
-        <div class="wx-bubble">$10</div>
-      </div>
-    </div>
-    <div class="wx-msg">
-      <div class="wx-msg-body">
-        <div class="wx-nickname">$8</div>
-        <div class="wx-bubble">$11</div>
-      </div>
-    </div>
-    <div class="wx-msg right">
-      <div class="wx-msg-body">
-        <div class="wx-nickname">$6</div>
-        <div class="wx-bubble">$12</div>
-      </div>
-    </div>
-    <div class="wx-msg">
-      <div class="wx-msg-body">
-        <div class="wx-nickname">$7</div>
-        <div class="wx-bubble">$13</div>
-      </div>
-    </div>
-  </div>
-</div></textarea>
+></textarea>
     <div class="code-hint">
       用 <code>$1</code> <code>$2</code> ... 代表捕获组的值，支持完整 HTML
     </div>
@@ -352,7 +186,7 @@
 <div class="bottom-bar">
   <select class="example-select" id="exampleSelect" onchange="loadExample(this.value)">
     <option value="">-- 加载示例 --</option>
-    <option value="wxchat">微信群聊状态栏</option>
+    
     <option value="hp_mp">HP / MP 数值</option>
     <option value="emotion">情绪状态</option>
   </select>
@@ -367,49 +201,7 @@ let currentCaptures = [];
 let currentTab = 'editor';
 
 const EXAMPLES = {
-  wxchat: {
-    prompt: '[WXCHAT|group=贺一然的内心小剧场|mood=开心|emoji=^^|favor=99|favormax=100|nameA=贺一然|nameB=贺小一|nameC=贺小然|msgA1=她真的喜欢我吧？|msgB1=她喜不喜欢你我不知道，但你一定喜欢她|msgC1=好感度都99了还问！|msgA2=那我要不要控制一下？|msgB2=控制个屁！控制控制她就跟别人跑了！]',
-    regex: '\$$WXCHAT\\|group=(.*?)\\|mood=(.*?)\\|emoji=(.*?)\\|favor=(\\d+)\\|favormax=(\\d+)\\|nameA=(.*?)\\|nameB=(.*?)\\|nameC=(.*?)\\|msgA1=(.*?)\\|msgB1=(.*?)\\|msgC1=(.*?)\\|msgA2=(.*?)\\|msgB2=(.*?)\$$',
-    template: `<style>
-.wx-wrap{width:100%;max-width:400px;background:#ededed;border-radius:14px;overflow:hidden;font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;box-shadow:0 4px 20px rgba(0,0,0,0.13);}
-.wx-header{background:#f2f2f2;text-align:center;padding:15px 16px;font-size:13px;font-weight:500;color:#555;border-bottom:1px solid #e0e0e0;letter-spacing:0.5px;}
-.wx-pin-wrap{background:#ededed;padding:8px 10px;border-bottom:1px solid #e0e0e0;}
-.wx-pin-card{background:#fff;border-radius:8px;padding:8px 11px;display:flex;align-items:flex-start;gap:8px;box-shadow:0 1px 3px rgba(0,0,0,0.05);}
-.wx-pin-icon{font-size:15px;flex-shrink:0;margin-top:1px;}
-.wx-pin-text{font-size:12px;color:#555;line-height:1.7;word-break:break-all;}
-.wx-pin-text b{font-weight:700;color:#222;font-size:12px;}
-.wx-chat{padding:6px 10px 14px;background:#ededed;display:flex;flex-direction:column;gap:10px;}
-.wx-date-divider{text-align:center;font-size:11px;color:#aaa;padding:6px 0 2px;}
-.wx-msg{display:flex;justify-content:flex-start;}
-.wx-msg.right{justify-content:flex-end;}
-.wx-msg-body{display:flex;flex-direction:column;gap:3px;max-width:75%;}
-.wx-msg.right .wx-msg-body{align-items:flex-end;}
-.wx-nickname{font-size:11px;color:#888;padding-left:2px;}
-.wx-msg.right .wx-nickname{padding-left:0;padding-right:2px;}
-.wx-bubble{background:#fff;color:#1a1a1a;font-size:13.5px;line-height:1.55;padding:8px 11px;border-radius:4px 10px 10px 10px;position:relative;word-break:break-all;box-shadow:0 1px 2px rgba(0,0,0,0.06);}
-.wx-bubble::before{content:"";position:absolute;left:-5px;top:10px;border-top:5px solid transparent;border-bottom:5px solid transparent;border-right:6px solid #fff;}
-.wx-msg.right .wx-bubble{background:#95ec69;border-radius:10px 4px 10px 10px;}
-.wx-msg.right .wx-bubble::before{display:none;}
-.wx-msg.right .wx-bubble::after{content:"";position:absolute;right:-5px;top:10px;border-top:5px solid transparent;border-bottom:5px solid transparent;border-left:6px solid #95ec69;}
-</style>
-<div class="wx-wrap">
-  <div class="wx-header">$1</div>
-  <div class="wx-pin-wrap">
-    <div class="wx-pin-card">
-      <div class="wx-pin-icon">📣</div>
-      <div class="wx-pin-text"><b>$6</b>：心情：$2 $3　好感度：$4/$5 $3</div>
-    </div>
-  </div>
-  <div class="wx-chat">
-    <div class="wx-date-divider">以下内容仅自己可见</div>
-    <div class="wx-msg right"><div class="wx-msg-body"><div class="wx-nickname">$6</div><div class="wx-bubble">$9</div></div></div>
-    <div class="wx-msg"><div class="wx-msg-body"><div class="wx-nickname">$7</div><div class="wx-bubble">$10</div></div></div>
-    <div class="wx-msg"><div class="wx-msg-body"><div class="wx-nickname">$8</div><div class="wx-bubble">$11</div></div></div>
-    <div class="wx-msg right"><div class="wx-msg-body"><div class="wx-nickname">$6</div><div class="wx-bubble">$12</div></div></div>
-    <div class="wx-msg"><div class="wx-msg-body"><div class="wx-nickname">$7</div><div class="wx-bubble">$13</div></div></div>
-  </div>
-</div>`
-  },
+
   hp_mp: {
     prompt: '[STATUS: HP=87, MP=34]',
     regex: '\$$STATUS: HP=(\\d+), MP=(\\d+)\$$',
